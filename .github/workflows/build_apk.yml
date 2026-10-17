@@ -1,28 +1,44 @@
-name: Build APK
+name: Build Odin Broker APK
 
-on: [push]
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          python-version: '3.10'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install buildozer cython requests colorama
 
-      - name: Build APK with Gradle
-        run: gradle assembleRelease
+      - name: Build APK with Buildozer
+        run: |
+          # ساخت فایل کانفیگ اولیه بیلدوزر
+          echo "[app]" > buildozer.spec
+          echo "title = Odin Pro Broker" >> buildozer.spec
+          echo "package.name = odinbroker" >> buildozer.spec
+          echo "package.domain = com.mohammad.odin" >> buildozer.spec
+          echo "source.include_exts = py,png,jpg,kv,atlas" >> buildozer.spec
+          echo "version = 1.0" >> buildozer.spec
+          echo "requirements = python3,kivy,requests,colorama" >> buildozer.spec
+          echo "orientation = portrait" >> buildozer.spec
+          
+          # اجرای بیلدوزر برای ساخت خروجی APK
+          buildozer -v android debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          name: odin-broker-apk
+          path: bin/*.apk
